@@ -24,12 +24,22 @@ from math import trunc
 from random import randrange
 
 # For Arduino communication
-from pyfirmata import serial
+# from pyfirmata import serial # commented out from og file
 
 # Trigger values sent to PLATO goggles via Arduino
 OPEN = b'55'
 CLOSE = b'56'
 BAUD = 9600
+
+# Dummy class to replace actual goggles/Arduino hardware 
+class DummyGoggles: 
+	def __init__(self, *args, **kwargs):
+       	pass
+
+    def write(self, *args, **kwargs):
+        # Do nothing — to prevents crashes when the experiment
+        # calls self.goggles.write(OPEN/CLOSE)
+        pass
 
 # Stimulus sizes
 UNIT = 9  # 9 mm; converted to px at runtime
@@ -94,8 +104,10 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                 'using the condition flag (e.g. klibs run 24 -c vision).'
             )
         # Handles communication with arduino (goggles)
-        self.goggles = serial.Serial(port=COM6, baudrate=BAUD)
+        # self.goggles = serial.Serial(port=COM6, baudrate=BAUD) # commented out this vers
+	self.goggles = DummyGoggles()  # to try not to trip up the system
 
+	
         # Go-signal
         self.go_tone = Tone(100)
 
