@@ -31,13 +31,13 @@ OPEN = b'55'
 CLOSE = b'56'
 BAUD = 9600
 
-# Dummy class to replace actual goggles/Arduino hardware 
-class DummyGoggles: 
-	def __init__(self, *args, **kwargs):
-       	pass
+# Dummy class to replace actual goggles/Arduino hardware
+class DummyGoggles:
+    def __init__(self, *args, **kwargs):
+        pass
 
     def write(self, *args, **kwargs):
-        # Do nothing — to prevents crashes when the experiment
+        # Do nothing — prevents crashes when the experiment
         # calls self.goggles.write(OPEN/CLOSE)
         pass
 
@@ -104,8 +104,9 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                 'using the condition flag (e.g. klibs run 24 -c vision).'
             )
         # Handles communication with arduino (goggles)
-        # self.goggles = serial.Serial(port=COM6, baudrate=BAUD) # commented out this vers
-	self.goggles = DummyGoggles()  # to try not to trip up the system
+        # self.goggles = serial.Serial(port=COM6, baudrate=BAUD) #commented out for this 
+        self.goggles = DummyGoggles()
+
 
 	
         # Go-signal
