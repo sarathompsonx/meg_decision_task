@@ -23,6 +23,13 @@ from klibs.KLBoundary import BoundarySet, CircleBoundary, RectangleBoundary
 from math import trunc
 from random import randrange
 
+import numpy as np
+
+# Patch for newer NumPy versions: KLibs expects ndarray.tostring(),
+# which was removed in NumPy 2.3.5. I alias it to .tobytes() here.
+if not hasattr(np.ndarray, "tostring"):
+    np.ndarray.tostring = np.ndarray.tobytes
+
 # For Arduino communication
 # from pyfirmata import serial # commented out from og file
 
