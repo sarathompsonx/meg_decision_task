@@ -21,7 +21,7 @@ from klibs.KLUserInterface import (
 from klibs.KLBoundary import BoundarySet, CircleBoundary, RectangleBoundary
 
 from math import trunc
-from random import randrange
+from random import randrange, choice
 
 
 # For Arduino communication
@@ -107,12 +107,14 @@ class reward_feedback_pointing_2025(klibs.Experiment):
     # Run first, and once, at the start of the experiment
     def setup(self):
 
-# Make sure a valud condition was provided at runtime
-        if P.condition not in ["reward_var", "penalty_var", "both_var"]:
-    raise ValueError(
-        "Condition must be one of: reward_var, penalty_var, both_var.\n"
-        "Run using, e.g.: klibs run 24 -c reward_var"
-    )
+	# needed to comment out for new set up
+	#      	 if P.condition not in ["reward_var", "penalty_var", "both_var"]:
+	#    raise ValueError(
+	#        "Condition must be one of: reward_var, penalty_var, both_var.\n"
+	#        "Run using, e.g.: klibs run 24 -c reward_var"
+	#    )
+
+        self.fixed_condition = REWARD_VAR
 
         # Handles communication with arduino (goggles)
         # self.goggles = serial.Serial(port=COM6, baudrate=BAUD) #commented out for this 
@@ -183,7 +185,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
             RectangleBoundary(
                 label=RECT,
                 p1=(
-                    (P.screen_x / 2) + (self.rect_w / 2),                          (P.screen_y - self.offset) - (self.rect_h / 2),  # type: ignore[operator]
+                    (P.screen_x / 2) + (self.rect_w / 2),                          			(P.screen_y - self.offset) - (self.rect_h / 2),  # type: ignore[operator]
                 ),
                 p2=(
                     (P.screen_x / 2) - (self.rect_w / 2),  # type: ignore[operator]
@@ -198,7 +200,8 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 
         
         # All blocks in this run use the same feedback condition.
-        self.conditions = [P.condition] * P.blocks_per_experiment
+        # self.conditions = [P.condition] * P.blocks_per_experiment
+        self.conditions = [self.fixed_condition] * P.blocks_per_experiment
 
         # If desired, insert practice block at start of experiment
         if P.run_practice_blocks:
@@ -268,10 +271,16 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         instrux += (
             '\n\nPress spacebar to begin the next block of trials.\n'
             'Start each trial by touching and holding your finger within the blue semicircle.'
+        )
 
         # Present instructions
         fill()
-        message(text=instrux, location=P.screen_c, blit_txt=True)
+        message(
+        text=instrux,
+        location=(P.screen_x * 0.55, P.screen_y * 0.50),  # shift right a bit
+        blit_txt=True
+)
+
         flip()
 
         # Wait for spacebar press to start running trials
@@ -284,6 +293,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 
     # First function called immediately prior to each trial
     def trial_prep(self):
+        print("RUNNING CONDITION:", self.fixed_condition, flush=True)
         self.goggles.write(OPEN)
         # determine circle positions
         self.positions = self.get_circle_placements()
@@ -384,7 +394,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                     also=(msg, self.bs.boundaries[RECT].center),
                 )
 
-                smart_sleep(P.feedback_duration)  # type: ignore[attr-defined]
+                smart_sleep(2000)  # type: ignore[attr-defined]
 
                 # NOTE:
                 # TrialException() reshuffles current trial into block trial deck.
@@ -425,8 +435,8 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                 rt = self.evm.trial_time_ms - tone_played_at  # type: ignore[operator]
 
                 # conditionally close goggles at movement start
-                if self.condition == REWARD:
-                    self.goggles.write(CLOSE)
+                # if self.condition == REWARD:
+                #    self.goggles.write(CLOSE)
 
         while mt is None and self.evm.before(TRIAL_TIMEOUT):
             # q = pump(True)
@@ -449,7 +459,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         pay = self.get_payout(clicked_on)
         self.bank += pay
 
-                # Present feedback
+        # Present feedback
         if clicked_on is not None:
 
             # only movement time provided on practice trials
@@ -485,7 +495,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                     rect=True,
                     also=(msg, self.bs.boundaries[RECT].center),
                 )
-                smart_sleep(P.feedback_duration)  # type: ignore[attr-defined]
+                smart_sleep(1000)  # type: ignore[attr-defined]
 
         # on failures to complete movement within timeframe
         else:
