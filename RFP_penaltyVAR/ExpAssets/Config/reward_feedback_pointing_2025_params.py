@@ -40,8 +40,8 @@ saccadic_motion_threshold = 0.15
 # Experiment Structure
 #########################################
 multi_session_project = False
-trials_per_block = 50
-blocks_per_experiment = 8
+trials_per_block = 30
+blocks_per_experiment = 4
 conditions = ['vision', 'reward']
 default_condition = None
 
@@ -66,5 +66,6 @@ append_hostname = False
 #########################################
 # PROJECT-SPECIFIC VARS
 #########################################
+run_practice_blocks = False
 trials_per_practice_block = 20
 feedback_duration = 2
