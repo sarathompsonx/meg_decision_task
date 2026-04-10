@@ -16,12 +16,13 @@ from trial to trial:
 In addition to the above, let's say you want cues to be valid 66% of the time. To 
 specify this sort of factor structure, you can do something like this:
 
-exp_factors = FactorSet({
-    'cue_validity': ['valid', 'valid', 'invalid'],
-    'cue_location': ['left', 'right'],
-    'target_onset': [200, 400, 800],
-    'alerting_tone': [True, False],
+ exp_factors = FactorSet({
+   'cue_validity': ['valid', 'valid', 'invalid'],
+   'cue_location': ['left', 'right'],
+   'target_onset': [200, 400, 800],
+   'alerting_tone': [True, False],
 })
+
 
 When the experiment is launched, the FactorSet will be loaded by the klibs runtime and
 used to generate trials based on the full set of unique combinations of factors.

@@ -114,7 +114,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 	#        "Run using, e.g.: klibs run 24 -c reward_var"
 	#    )
 
-        self.practice_only = True
+        self.practice_only = False
         self.fixed_condition = 'practice'
 
         # Handles communication with arduino (goggles)
@@ -205,11 +205,11 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         self.conditions = ['practice'] * P.blocks_per_experiment
 
         # If desired, insert practice block at start of experiment
-        if P.run_practice_blocks:
-            self.insert_practice_block(
-                block_nums=[1],
-                trial_counts=P.trials_per_practice_block,  
-            )
+        #if P.run_practice_blocks:
+        #   self.insert_practice_block(
+        #       block_nums=[1],
+        #       trial_counts=P.trials_per_practice_block,
+        #   )
 
         #
         #   Instruction set
@@ -250,8 +250,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
             ),
         }
 
-
-    # First function called at start of each block
+        # First function called at start of each block
     def block(self):
         self.goggles.write(OPEN)
 
@@ -276,7 +275,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         fill()
         message(
         text=instrux,
-        location=(P.screen_x * 0.55, P.screen_y * 0.50),  # shift right a bit
+        location=P.screen_c, # centered
         blit_txt=True
 )
 
@@ -292,6 +291,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 
     # First function called immediately prior to each trial
     def trial_prep(self):
+        self.condition = self.trial.get("feedback_condition","practice")
         print("RUNNING CONDITION:", self.fixed_condition, flush=True)
         self.goggles.write(OPEN)
         # determine circle positions
