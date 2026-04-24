@@ -238,14 +238,16 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                 "you may take a break between blocks whenever you need."
             ),
             BOTH_VAR: (
-                "In this block, BOTH the REWARD and the PENALTY amounts can change from trial to trial.\n\n"
-                "Each trial, you'll see two overlapping circles: a GREEN circle (reward) "
-                "and a RED circle (penalty). The GREEN circle will be worth either +100 or +600 points, "
-                "and the RED circle will be worth either -100 or -600 points.\n\n"
-                "After each trial, you'll see feedback showing + or - and the number of points you gained or lost, "
-                "as well as your total points so far.\n\n"
-                f"You will complete {P.blocks_per_experiment * P.trials_per_block} trials in this run; "
-                "you may take a break between blocks whenever you need."
+                 "In this block, both the reward and penalty amounts can change\n"
+                 "from trial to trial.\n\n"
+                 "Each trial, you will see two overlapping circles:\n"
+                 "GREEN = reward\n"
+                 "RED = penalty\n\n"
+                 "The green circle will be worth either +100 or +600 points.\n"
+                 "The red circle will be worth either -100 or -600 points.\n\n"
+                 "After each trial, you will see your trial payout\n"
+                 "and your total points so far.\n\n"
+                 "Try to earn as many points as possible."
             ),
         }
 
