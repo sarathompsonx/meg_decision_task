@@ -120,7 +120,8 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         # self.goggles = serial.Serial(port=COM6, baudrate=BAUD) #commented out for this 
         self.goggles = DummyGoggles()
 
-
+        # Earnings total 
+        self.total_earnings = 0
 	
         # Go-signal
         self.go_tone = Tone(100)
@@ -460,6 +461,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         # determine payout
         pay = self.get_payout(clicked_on)
         self.bank += pay
+        self.total_earnings += pay
 
         # Present feedback
         if clicked_on is not None:
@@ -539,7 +541,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 
                 fill()
                 message(
-                    text=f'End of block! You scored: {self.bank}.\nPress spacebar to continue.',
+                    text=f'End of block!\nBlock: {self.bank}\nTotal: {self.total_earnings}\nPress spacebar to continue.',
                     location=P.screen_c,
                     blit_txt=True,
                 )
@@ -555,7 +557,20 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 
     # Called once at experiment end; almost never needed, like here
     def clean_up(self):
-        pass
+        fill()
+        message(
+            text=f"Experiment complete!\nTotal earnings: {self.total_earnings} points",
+            location=P.screen_c,
+            blit_txt=True
+        )
+        flip()
+
+        while True:
+            q = pump(True)
+            _ = ui_request(queue=q)
+            if key_pressed(SPACE):
+                break
+
 
     # TODO: this could/should have been a dict
     def get_payout(self, clicked_on=None):
