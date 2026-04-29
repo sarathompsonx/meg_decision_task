@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__author__ = 'Sara Thompson'
+__author__ = 'Brett Feltmate'
 
 import klibs
 from klibs import P
@@ -52,19 +52,20 @@ OFFSET = 21  # up from screen bottom
 RECT_WIDTH = 13
 RECT_HEIGHT = 9
 FIX_WIDTH = 2
-THICKNESS = 0.05  # thickness of stimulus [out]lines
+THICKNESS = 0.1  # thickness of stimulus [out]lines
 
 # Colors
 RED = (255, 0, 0, 255)
 GREEN = (0, 255, 0, 255)
 BLUE = (0, 0, 255, 255)
 WHITE = (255, 255, 255, 255)
+NONE = (0, 0, 0, 0)
 
 # Color-outcome mappings
 PENALTY_OUTLINE = RED
-PENALTY_FILL = RED
+PENALTY_FILL = NONE
 REWARD_OUTLINE = GREEN
-REWARD_FILL = GREEN 
+REWARD_FILL = NONE 
 
 # Point values
 REWARD_PAYOUT = 100
@@ -114,13 +115,14 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 	#        "Run using, e.g.: klibs run 24 -c reward_var"
 	#    )
 
-        self.practice_only = False
-        self.fixed_condition = 'practice'
+        self.fixed_condition = PENALTY_VAR
 
         # Handles communication with arduino (goggles)
         # self.goggles = serial.Serial(port=COM6, baudrate=BAUD) #commented out for this 
         self.goggles = DummyGoggles()
 
+        # Earnings total 
+        self.total_earnings = 0
 
 	
         # Go-signal
@@ -202,14 +204,14 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         
         # All blocks in this run use the same feedback condition.
         # self.conditions = [P.condition] * P.blocks_per_experiment
-        self.conditions = ['practice'] * P.blocks_per_experiment
+        self.conditions = [self.fixed_condition] * P.blocks_per_experiment
 
         # If desired, insert practice block at start of experiment
-        #if P.run_practice_blocks:
-        #   self.insert_practice_block(
-        #       block_nums=[1],
-        #       trial_counts=P.trials_per_practice_block,
-        #   )
+        if P.run_practice_blocks:
+            self.insert_practice_block(
+                block_nums=[1],
+                trial_counts=P.trials_per_practice_block,  
+            )
 
         #
         #   Instruction set
@@ -220,7 +222,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                 "In this block, the REWARD amount can change from trial to trial, "
                 "but the PENALTY amount stays the same.\n\n"
                 "Each trial, you'll see two overlapping circles: a GREEN circle (reward) "
-                "and a RED circle (penalty). The GREEN circle will be worth either +100 or    +600 points, "
+                "and a RED circle (penalty). The GREEN circle will be worth either +100 or +600 points, "
                 "and the RED circle will always be worth -100 points.\n\n"
                 "After each trial, you'll see feedback showing + or - and the number of points you gained or lost, "
                 "as well as your total points so far.\n\n"
@@ -228,15 +230,10 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                 "you may take a break between blocks whenever you need."
             ),
             PENALTY_VAR: (
-                "In this block, the PENALTY amount can change from trial to trial, "
-                "but the REWARD amount stays the same.\n\n"
-                "Each trial, you'll see two overlapping circles: a GREEN circle (reward) "
-                "and a RED circle (penalty). The GREEN circle is always worth +100 points, "
-                "and the RED circle will be worth either -100 or -600 points.\n\n"
-                "After each trial, you'll see feedback showing + or - and the number of points you gained or lost, "
-                "as well as your total points so far.\n\n"
-                f"You will complete {P.blocks_per_experiment * P.trials_per_block} trials in this run; "
-                "you may take a break between blocks whenever you need."
+                "Each trial, you will see two overlapping circles:\n"
+                "GREEN = reward\n"
+                "RED = penalty\n\n"
+                
             ),
             BOTH_VAR: (
                 "In this block, BOTH the REWARD and the PENALTY amounts can change from trial to trial.\n\n"
@@ -250,37 +247,40 @@ class reward_feedback_pointing_2025(klibs.Experiment):
             ),
         }
 
-        # First function called at start of each block
+
+    # First function called at start of each block
     def block(self):
         self.goggles.write(OPEN)
 
-    # get task condition for block
-        self.condition = 'practice'
+        # get task condition for block
+        if P.practicing:
+            self.condition = 'practice'
+        else:
+            self.condition = self.conditions.pop(0)
 
-
-    # for storing block earnings
+        # for storing block earnings
         self.bank = 0
 
-        instrux = '(PRACTICE)\n'
+        instrux = '(PRACTICE BLOCK)\n' if P.practicing else '(TESTING BLOCK)\n'
 
-       # if not P.practicing: commented out bc no reward/penalty instructions
-        #    instrux += self.instructions[self.condition]
+        if not P.practicing:
+            instrux += self.instructions[self.condition]
 
         instrux += (
             '\n\nPress spacebar to begin the next block of trials.\n'
             'Start each trial by touching and holding your finger within the blue semicircle.'
         )
 
-        # Present instructions
+ # Present instructions
         fill()
-        message(
-        text=instrux,
-        location=P.screen_c, # centered
-        blit_txt=True
-)
+
+        msg = message(
+            text=instrux,
+            location=P.screen_c,
+            blit_txt=False
+        )
 
         flip()
-
         # Wait for spacebar press to start running trials
         while True:
             # Monitor for any commands to quit, etc
@@ -291,11 +291,10 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 
     # First function called immediately prior to each trial
     def trial_prep(self):
-        self.condition = self.trial.get("feedback_condition","practice")
         print("RUNNING CONDITION:", self.fixed_condition, flush=True)
         self.goggles.write(OPEN)
         # determine circle positions
-        # self.positions = self.get_circle_placements() ##commented out bc practice only
+        self.positions = self.get_circle_placements()
         # Set trial-specific reward and penalty amounts based on feedback condition
         # Default values (used for practice, just in case)
         self.reward_amount = 100
@@ -322,24 +321,25 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         self.overlap_amount = self.penalty_amount
 
         # this changes for each trial, so needs to be (re)defined here
-        # self.bs.add_boundaries(
-        #    [
-        #       CircleBoundary(
-        #           PENALTY,
-        #           self.positions[PENALTY],
-        #           self.target_circle_d / 2,
-        #       ),
-        #       CircleBoundary( 
-        #           REWARD,
-        #           self.positions[REWARD],
-        #           self.target_circle_d / 2,
-        #       ),
-        #   ]
-        #)
+        self.bs.add_boundaries(
+            [
+                CircleBoundary(
+                    PENALTY,
+                    self.positions[PENALTY],
+                    self.target_circle_d / 2,
+                ),
+                CircleBoundary(
+                    REWARD,
+                    self.positions[REWARD],
+                    self.target_circle_d / 2,
+                ),
+            ]
+        )
 
         # practice trial have "no" timeout, but code is cleaner if made excessively long instead
-        trial_timeout = 30000  # 30s practice
-
+        trial_timeout = (
+            TIMEOUT_AFTER if not P.practicing else 30000
+        )  # 30s when practicing
 
         # Defined event sequence within trial
         self.evm.add_event(RECTANGLE_ONSET, RECT_ONSET)
@@ -406,12 +406,13 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                 self.draw_display(rect=True)
                 rect_visible = True  # don't do redundant redraws
 
-        # Practice-only: never show circles
-        # if (self.evm.after(CIRCLE_ONSET) and not circles_visible):
-        #     self.draw_display(rect=True, circles=True)
-        #     circles_visible = True
-
-
+            if (
+                self.evm.after(CIRCLE_ONSET)
+                and not P.practicing
+                and not circles_visible
+            ):
+                self.draw_display(rect=True, circles=True)
+                circles_visible = True
 
         #
         #   Response period
@@ -455,6 +456,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         # determine payout
         pay = self.get_payout(clicked_on)
         self.bank += pay
+        self.total_earnings += pay
 
         # Present feedback
         if clicked_on is not None:
@@ -502,7 +504,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                 also=(msg, self.bs.boundaries[RECT].center),
             )
 
-        smart_sleep(800)  
+        smart_sleep(P.feedback_duration)  
 
 
        
@@ -512,9 +514,9 @@ class reward_feedback_pointing_2025(klibs.Experiment):
             'block_num': P.block_number,
             'trial_num': P.trial_number,
             'feedback_condition': self.condition,
-            #'reward_side': self.reward_side,  # type: ignore[defined]
-            #'reward_x': self.positions[REWARD][0],
-            #'reward_y': self.positions[REWARD][1],
+            'reward_side': self.reward_side,  # type: ignore[defined]
+            'reward_x': self.positions[REWARD][0],
+            'reward_y': self.positions[REWARD][1],
             'clicked_on': clicked_on if clicked_on is not None else NA,
             'clicked_x': clicked_at[0] if clicked_at is not None else NA,
             'clicked_y': clicked_at[1] if clicked_at is not None else NA,
@@ -534,7 +536,7 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 
                 fill()
                 message(
-                    text=f'End of block! You scored: {self.bank}.\nPress spacebar to continue.',
+                      text=f'End of block!\nBlock: {self.bank}\nTotal: {self.total_earnings}\nPress spacebar to continue.',
                     location=P.screen_c,
                     blit_txt=True,
                 )
@@ -550,7 +552,20 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 
     # Called once at experiment end; almost never needed, like here
     def clean_up(self):
-        pass
+        fill()
+        message(
+            text=f"Experiment complete!\nTotal earnings: {self.total_earnings} points",
+            location=P.screen_c,
+            blit_txt=True
+        )
+        flip()
+
+        while True:
+            q = pump(True)
+            _ = ui_request(queue=q)
+            if key_pressed(SPACE):
+                break
+
 
     # TODO: this could/should have been a dict
     def get_payout(self, clicked_on=None):

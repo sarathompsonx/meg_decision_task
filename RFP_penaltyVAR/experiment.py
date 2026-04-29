@@ -52,19 +52,20 @@ OFFSET = 21  # up from screen bottom
 RECT_WIDTH = 13
 RECT_HEIGHT = 9
 FIX_WIDTH = 2
-THICKNESS = 0.05  # thickness of stimulus [out]lines
+THICKNESS = 0.1  # thickness of stimulus [out]lines
 
 # Colors
 RED = (255, 0, 0, 255)
 GREEN = (0, 255, 0, 255)
 BLUE = (0, 0, 255, 255)
 WHITE = (255, 255, 255, 255)
+NONE = (0, 0, 0, 0)
 
 # Color-outcome mappings
 PENALTY_OUTLINE = RED
-PENALTY_FILL = RED
+PENALTY_FILL = NONE
 REWARD_OUTLINE = GREEN
-REWARD_FILL = GREEN 
+REWARD_FILL = NONE 
 
 # Point values
 REWARD_PAYOUT = 100

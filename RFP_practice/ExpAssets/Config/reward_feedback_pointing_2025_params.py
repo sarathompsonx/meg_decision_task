@@ -10,9 +10,6 @@ run_practice_blocks = True
 multi_user = False
 view_distance = 57 # in centimeters, 57cm = 1 deg of visual angle per cm of screen
 allow_hidpi = False
-fullscreen = False
-window_width = 1800
-window_height = 1000
 
 #########################################
 # Available Hardware
@@ -25,7 +22,7 @@ eye_tracking = False
 #########################################
 default_fill_color = (45, 45, 45, 255)
 default_color = (255, 255, 255, 255)
-default_font_size = 18
+default_font_size = 23
 default_font_unit = 'px'
 default_font_name = 'Hind-Medium'
 
@@ -45,8 +42,8 @@ saccadic_motion_threshold = 0.15
 multi_session_project = False
 trials_per_block = 20
 blocks_per_experiment = 1
-conditions = ['practice']
-default_condition = 'practice'
+conditions = ['vision', 'reward']
+default_condition = None
 
 #########################################
 # Development Mode Settings
@@ -69,7 +66,6 @@ append_hostname = False
 #########################################
 # PROJECT-SPECIFIC VARS
 #########################################
-run_practice_blocks = False
-trials_per_practice_block = 20
+run_practice_blocks = True
+trials_per_practice_block = 10
 feedback_duration = 400
-
