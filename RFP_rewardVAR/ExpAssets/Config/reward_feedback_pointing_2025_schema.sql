@@ -65,6 +65,9 @@ CREATE TABLE trials (
     clicked_y text not null,
     reaction_time text not null,
     movement_time text not null,
+    reward_amount text not null,
+    penalty_amount text not null,
+    overlap_amount text not null,
     trial_earnings text not null,
     block_earnings text not null
 );

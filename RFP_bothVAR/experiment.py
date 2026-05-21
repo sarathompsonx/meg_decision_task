@@ -528,6 +528,9 @@ class reward_feedback_pointing_2025(klibs.Experiment):
             'clicked_y': clicked_at[1] if clicked_at is not None else NA,
             'reaction_time': rt,
             'movement_time': mt,
+            'reward_amount': self.reward_amount,
+            'penalty_amount': self.penalty_amount,
+            'overlap_amount': self.overlap_amount,
             'trial_earnings': pay,
             'block_earnings': self.bank,
         }
