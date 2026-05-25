@@ -322,8 +322,8 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                 self.penalty_amount = choice([-100, -600])
 
         # How to treat the overlapping region:
-        # for now, treat OVERLAP as the same as the penalty amount (riskier region).
-        self.overlap_amount = self.penalty_amount
+        # overlap is now the NET value of the reward and penalty circles
+        self.overlap_amount = self.penalty_amount + self.reward_amount
 
         # this changes for each trial, so needs to be (re)defined here
         self.bs.add_boundaries(
