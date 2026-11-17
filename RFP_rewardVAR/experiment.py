@@ -10,6 +10,7 @@ from klibs.KLGraphics import KLDraw as kld
 from klibs.KLConstants import STROKE_INNER
 from klibs.KLCommunication import message
 from klibs.KLGraphics import fill, flip, blit, clear
+from klibs.KLText import add_text_style
 from klibs.KLUserInterface import (
     key_pressed,
     pump,
@@ -21,7 +22,7 @@ from klibs.KLUserInterface import (
 from klibs.KLBoundary import BoundarySet, CircleBoundary, RectangleBoundary
 
 from math import trunc
-from random import randrange, choice
+from random import randrange, choice, shuffle
 
 
 # For Arduino communication
@@ -117,7 +118,19 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 
         self.fixed_condition = REWARD_VAR
 
-        # Handles communication with arduino (goggles)
+        # Randomize the order of all four probability blocks
+        self.probability_block_order = [
+            "50_50",
+            "50_50",
+            "80_20_low",
+            "80_20_high"
+        ]
+        shuffle(self.probability_block_order)
+
+        print("PROBABILITY BLOCK ORDER:", self.probability_block_order, flush=True)
+
+
+    # Handles communication with arduino (goggles)
         # self.goggles = serial.Serial(port=COM6, baudrate=BAUD) #commented out for this 
         self.goggles = DummyGoggles()
 
@@ -141,7 +154,8 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         self.fix_w = self.unit * FIX_WIDTH
         self.thick = self.unit * THICKNESS
 
-        # Define visual stimulus objects
+
+    # Define visual stimulus objects
         self.stimuli = {
             START: kld.Circle(
                 diameter=self.start_circle_d,
@@ -218,16 +232,13 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 
         self.instructions = {
             REWARD_VAR: (
-                "In this block, the reward amount can change from trial to trial,\n"
-                "but the penalty amount stays the same.\n\n"
-                "Each trial, you will see two overlapping circles:\n"
-                "GREEN = reward\n"
-                "RED = penalty\n\n"
-                "The green circle will be worth either +100 or +600 points.\n"
-                "The red circle is always worth -100 points.\n\n"
+                "On each trial, you will see two overlapping circles:\n"
+                "GREEN = reward (+600 or +100)\n"
+                "RED = penalty (-100) \n\n"
+                "The overlapping region is worth the sum of the reward and penalty circles.\n\n"
                 "After each trial, you will see your trial payout\n"
                 "and your total points so far.\n\n"
-                "Try to earn as many points as possible."
+                "Your goal is to earn as many points as possible.\n"
             ),
             PENALTY_VAR: (
                 "In this block, the PENALTY amount can change from trial to trial, "
@@ -263,36 +274,111 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         else:
             self.condition = self.conditions.pop(0)
 
+            # Track the current testing block
+            if not hasattr(self, "probability_block_number"):
+                self.probability_block_number = 0
+
+            self.probability_block_number += 1
+
+            # Get the randomized probability condition
+            block_type = self.probability_block_order[
+                self.probability_block_number - 1
+                ]
+
+            if block_type == "50_50":
+                self.probability_context = "50_50"
+                self.dominant_value = "none"
+                n_low = 15
+                n_high = 15
+
+            elif block_type == "80_20_low":
+                self.probability_context = "80_20"
+                self.dominant_value = 100
+                n_low = 24
+                n_high = 6
+
+            else:
+                self.probability_context = "80_20"
+                self.dominant_value = 600
+                n_low = 6
+                n_high = 24
+
+            # Create and randomize the block's reward values
+            self.reward_schedule = (
+                    [100] * n_low + [600] * n_high
+            )
+            shuffle(self.reward_schedule)
+
         # for storing block earnings
         self.bank = 0
 
+        # SCREEN 1: General task instructions
         instrux = '(PRACTICE BLOCK)\n' if P.practicing else '(TESTING BLOCK)\n'
 
         if not P.practicing:
             instrux += self.instructions[self.condition]
 
-        instrux += (
-            '\n\nPress spacebar to begin the next block of trials.\n'
-            'Start each trial by touching and holding your finger within the blue semicircle.'
-        )
+        instrux += "\n\nPress SPACE to continue."
 
-        # Present instructions
         fill()
         message(
-        text=instrux,
-        location=(P.screen_x * 0.55, P.screen_y * 0.50),  # shift right a bit
-        blit_txt=True
-)
-
+            text=instrux,
+            location=(P.screen_x * 0.55, P.screen_y * 0.50),
+            blit_txt=True
+        )
         flip()
 
-        # Wait for spacebar press to start running trials
         while True:
-            # Monitor for any commands to quit, etc
             q = pump(True)
             _ = ui_request(queue=q)
-            if key_pressed(SPACE):
+            if key_pressed(SPACE, queue=q):
                 break
+
+        # SCREEN 2: Block-specific probability instructions
+        if not P.practicing:
+
+            if self.probability_context == "50_50":
+                probability_text = (
+                    "REWARD PROBABILITIES\n\n"
+                    "In this block, the two reward values are equally likely.\n\n"
+                    "+100 points: 50% of trials\n"
+                    "+600 points: 50% of trials"
+                )
+
+            elif self.dominant_value == 100:
+                probability_text = (
+                    "REWARD PROBABILITIES\n\n"
+                    "In this block, the reward values have different probabilities.\n\n"
+                    "+100 points: 80% of trials\n"
+                    "+600 points: 20% of trials"
+                )
+
+            else:
+                probability_text = (
+                    "REWARD PROBABILITIES\n\n"
+                    "In this block, the reward values have different probabilities.\n\n"
+                    "+100 points: 20% of trials\n"
+                    "+600 points: 80% of trials"
+                )
+
+            probability_text += (
+                "\n\nUse these probabilities to help maximize your points."
+                "\n\nPress SPACE to begin the block."
+            )
+
+            fill()
+            message(
+                text=probability_text,
+                location=(P.screen_x * 0.55, P.screen_y * 0.50),
+                blit_txt=True
+            )
+            flip()
+
+            while True:
+                q = pump(True)
+                _ = ui_request(queue=q)
+                if key_pressed(SPACE, queue=q):
+                    break
 
     # First function called immediately prior to each trial
     def trial_prep(self):
@@ -307,9 +393,18 @@ class reward_feedback_pointing_2025(klibs.Experiment):
 
         if not P.practicing:
             if self.condition == REWARD_VAR:
-                # Reward varies: +100 or +600, penalty fixed at -100
-                self.reward_amount = choice([100, 600])
+                # Select the reward value from this block's schedule
+                self.reward_amount = self.reward_schedule.pop()
                 self.penalty_amount = -100
+
+                # Record whether this trial uses the dominant value
+                if self.probability_context == "50_50":
+                    self.value_frequency = "equal"
+                elif self.reward_amount == self.dominant_value:
+                    self.value_frequency = "common"
+                else:
+                    self.value_frequency = "rare"
+
 
             elif self.condition == PENALTY_VAR:
                 # Penalty varies: -100 or -600, reward fixed at +100
@@ -400,8 +495,11 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                 smart_sleep(2000)  # type: ignore[attr-defined]
 
                 # NOTE:
-                # TrialException() reshuffles current trial into block trial deck.
-                # This preserves trial counts and randomization.
+                # Return the unused reward value to the schedule
+                if not P.practicing:
+                    self.reward_schedule.append(self.reward_amount)
+                    shuffle(self.reward_schedule)
+                # Retry the interrupted trial
                 raise TrialException('Premptive movement')
 
             rect_visible, circles_visible = False, False
@@ -416,15 +514,22 @@ class reward_feedback_pointing_2025(klibs.Experiment):
                 and not P.practicing
                 and not circles_visible
             ):
-                self.draw_display(rect=True, circles=True)
+                self.draw_display(rect=True, circles=True, show_values=False)
                 circles_visible = True
 
         #
         #   Response period
         #
 
+        # Response period
         self.go_tone.play()
         tone_played_at = self.evm.trial_time_ms
+
+        # Remove numerical values at the go-signal
+        # while keeping the circles and rectangle visible
+        if not P.practicing:
+            self.draw_display(rect=True, circles=True, show_values=False)
+
 
         rt, mt, clicked_on, clicked_at, pay = None, None, None, None, None
 
@@ -519,6 +624,16 @@ class reward_feedback_pointing_2025(klibs.Experiment):
             'block_num': P.block_number,
             'trial_num': P.trial_number,
             'feedback_condition': self.condition,
+            'probability_order': "-".join(self.probability_block_order),
+            'probability_context': (
+                self.probability_context if not P.practicing else "practice"
+            ),
+            'dominant_value': (
+                self.dominant_value if not P.practicing else None
+            ),
+            'value_frequency': (
+                self.value_frequency if not P.practicing else "practice"
+            ),
             'reward_side': self.reward_side,  # type: ignore[defined]
             'reward_x': self.positions[REWARD][0],
             'reward_y': self.positions[REWARD][1],
@@ -631,9 +746,8 @@ class reward_feedback_pointing_2025(klibs.Experiment):
         fix: bool = False,
         rect: bool = False,
         circles: bool = False,
-        # "also" will try to blit whatever you pass it, does not check if that is a good idea
-        # Needs to be a tuple os (thing, xy)
-        also=None,
+            show_values: bool = False,
+            also=None,
     ):
 
         fill()
@@ -667,6 +781,46 @@ class reward_feedback_pointing_2025(klibs.Experiment):
             blit(
                 self.stimuli[REWARD],
                 location=self.positions[REWARD],
+                registration=5,
+            )
+
+        # Display reward and penalty values during preview
+        if circles and show_values and not P.practicing:
+            # Shift labels away from the overlapping region
+            label_offset = self.target_circle_d * 0.18
+
+            reward_x, reward_y = self.positions[REWARD]
+            penalty_x, penalty_y = self.positions[PENALTY]
+
+            if reward_x > penalty_x:
+                reward_x += label_offset
+                penalty_x -= label_offset
+            else:
+                reward_x -= label_offset
+                penalty_x += label_offset
+
+            reward_text = f"+{self.reward_amount}"
+            penalty_text = f"{self.penalty_amount}"
+
+            reward_label = message(
+                reward_text,
+                color=GREEN,
+                blit_txt=False,
+            )
+            penalty_label = message(
+                penalty_text,
+                color=RED,
+                blit_txt=False,
+            )
+
+            blit(
+                reward_label,
+                location=(reward_x, reward_y),
+                registration=5,
+            )
+            blit(
+                penalty_label,
+                location=(penalty_x, penalty_y),
                 registration=5,
             )
 
